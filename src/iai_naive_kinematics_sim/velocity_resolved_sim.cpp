@@ -57,6 +57,13 @@ class SimulatorNode
         readControlledJoints();
 
       sim_.init(readUrdf(), controlled_joints, readWatchdogPeriod());
+      
+      std::string fake_controller_path = "";
+      if (nh_.getParam("fake_controllers", fake_controller_path)) {
+        ROS_INFO("Fake controller path found: %s", fake_controller_path.c_str());
+        sim_.initFakeJoints(fake_controller_path);
+      }
+
       sim_.setSubJointState(readStartConfig());
 
       startSubs(controlled_joints);

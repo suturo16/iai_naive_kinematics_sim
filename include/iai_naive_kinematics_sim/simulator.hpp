@@ -30,14 +30,19 @@
 #define IAI_NAIVE_KINEMATICS_SIM_SIMULATOR_HPP
 
 #include <iai_naive_kinematics_sim/utils.hpp>
+#include "iai_naive_kinematics_sim/expressions.h"
 
 namespace iai_naive_kinematics_sim
 {
  
   class SimulatorVelocityResolved
   {
+    friend class ExpressionTree;
+
     public:
-      SimulatorVelocityResolved() {}
+      SimulatorVelocityResolved() 
+      : expressionTree(this)
+      {}
 
       ~SimulatorVelocityResolved() {}
 
@@ -46,6 +51,13 @@ namespace iai_naive_kinematics_sim
         model_ = model;
         state_ = bootstrapJointState(model);
         index_map_ = makeJointIndexMap(state_.name);
+      }
+
+      void loadFakeJoints(const std::string &path) {
+        posExprs.clear();
+        velExprs.clear();
+        effExprs.clear();
+        expressionTree.parseYAML(path, posExprs, velExprs, effExprs);
       }
 
       size_t size() const
@@ -72,7 +84,13 @@ namespace iai_naive_kinematics_sim
         {
           state_.position[i] += state_.velocity[i] * dt;
           enforceJointLimits(state_.name[i]);
-        } 
+        }
+
+        // Update fake psoitions
+        for(auto it = posExprs.begin(); it != posExprs.end(); it++) {
+          state_.position[it->first] = it->second->value();
+          enforceJointLimits(state_.name[it->first]);
+        }
 
         state_.header.stamp = now;
         state_.header.seq++;
@@ -114,6 +132,11 @@ namespace iai_naive_kinematics_sim
       }
 
     private:
+      ExpressionTree expressionTree;
+      unordered_map<size_t, Expression<double>*> posExprs;
+      unordered_map<size_t, Expression<double>*> velExprs;
+      unordered_map<size_t, Expression<double>*> effExprs;
+
       // internal state of the simulator
       sensor_msgs::JointState state_;
 

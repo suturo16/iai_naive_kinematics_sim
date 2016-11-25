@@ -12,6 +12,7 @@
     <rosparam param="controlled_joints"
       file="$(find iai_naive_kinematics_sim)/test_data/pr2_controlled_joints.yaml" />
     <rosparam param="start_config" file="$(arg start_config_file)" />
+    <param name="fake_controllers" value="$(find iai_naive_kinematics_sim)/test_data/pr2_fake_controllers.yaml"/>
     <param name="sim_frequency" value="$(arg sim_frequency)" />
     <param name="watchdog_period" value="0.1" />
   </node>
@@ -22,9 +23,9 @@
   <node pkg="tf2_ros" type="buffer_server" name="tf2_buffer_server" />
 
   <node pkg="tf" type="static_transform_publisher" name="fake_localization"
-        output="screen" args="0 0 0 0 0 0 map odom 100" />
+        output="screen" args="0 0 0 0 0 0 map odom_combined 100" />
 
   <node pkg="tf" type="static_transform_publisher" name="fake_odometry"
-        output="screen" args="0 0 0 0 0 0 odom base_footprint 100" />
+        output="screen" args="0 0 0 0 0 0 odom_combined base_footprint 100" />
 
 </launch>

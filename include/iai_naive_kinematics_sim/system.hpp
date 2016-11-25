@@ -55,6 +55,10 @@ namespace iai_naive_kinematics_sim
           dogs_[controlled_joints[i]] = Watchdog(ros::Duration(watchdog_period));
       }
 
+      void initFakeJoints(const std::string &path) {
+        sim_.loadFakeJoints(path);
+      }
+
       const sensor_msgs::JointState& getJointState() const
       {
         return sim_.getJointState();

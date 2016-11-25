@@ -6,23 +6,30 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   urdf
   sensor_msgs
-  std_msgs)
+  std_msgs
+  )
+
+find_path(yaml_cpp_INCLUDE_DIRS yaml-cpp/yaml.h PATH_SUFFIXES include)
+find_library(yaml_cpp_LIBRARIES NAMES yaml-cpp)
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS roscpp urdf sensor_msgs std_msgs)
+  CATKIN_DEPENDS roscpp urdf sensor_msgs std_msgs
+  DEPENDS yaml_cpp
+  )
 
 include_directories(
   include
-  ${catkin_INCLUDE_DIRS})
+  ${catkin_INCLUDE_DIRS}
+  ${yaml_cpp_INCLUDE_DIRS})
 
 add_executable(velocity_resolved_sim 
-  src/${PROJECT_NAME}/velocity_resolved_sim.cpp)
+  src/${PROJECT_NAME}/velocity_resolved_sim.cpp src/${PROJECT_NAME}/expressions.cpp)
 add_dependencies(velocity_resolved_sim 
   ${${PROJECT_NAME}_EXPORTED_TARGETS} 
   ${catkin_EXPORTED_TARGETS})
 target_link_libraries(velocity_resolved_sim
-  ${catkin_LIBRARIES})
+  ${catkin_LIBRARIES} yaml-cpp)
 
 #############
 ## Install ##

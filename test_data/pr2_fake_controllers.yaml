@@ -1,0 +1,11 @@
+fake-controllers:
+  - r_gripper_l_finger_joint:
+      position: {add: [{mul: [{f-pos-of: r_gripper_joint}, {pos-lim-len-of: r_gripper_l_finger_joint}]}, {pos-lim-low-of: r_gripper_l_finger_joint}]}
+  - r_gripper_l_finger_tip_joint:
+      position: {add: [{mul: [{f-pos-of: r_gripper_joint}, {pos-lim-len-of: r_gripper_l_finger_tip_joint}]}, {pos-lim-low-of: r_gripper_l_finger_tip_joint}]}
+
+  - r_gripper_r_finger_joint:
+      position: {add: [{mul: [{f-pos-of: r_gripper_joint}, {pos-lim-len-of: r_gripper_r_finger_joint}]}, {pos-lim-low-of: r_gripper_r_finger_joint}]}
+  - r_gripper_r_finger_tip_joint:
+      position: {add: [{mul: [{f-pos-of: r_gripper_joint}, {pos-lim-len-of: r_gripper_r_finger_tip_joint}]}, {pos-lim-low-of: r_gripper_r_finger_tip_joint}]}
+    
