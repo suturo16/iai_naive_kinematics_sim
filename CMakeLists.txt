@@ -8,7 +8,12 @@ find_package(catkin REQUIRED COMPONENTS
   message_runtime
   urdf
   sensor_msgs
-  std_msgs)
+  std_msgs
+  resource_retriever
+  )
+
+find_path(yaml_cpp_INCLUDE_DIRS yaml-cpp/yaml.h PATH_SUFFIXES include)
+find_library(yaml_cpp_LIBRARIES NAMES yaml-cpp)
 
 add_message_files(DIRECTORY msg
   FILES
@@ -22,19 +27,22 @@ generate_messages(DEPENDENCIES sensor_msgs)
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS roscpp message_generation message_runtime urdf sensor_msgs std_msgs)
+  CATKIN_DEPENDS roscpp message_generation message_runtime urdf sensor_msgs std_msgs
+  DEPENDS yaml_cpp
+  )
 
 include_directories(
   include
-  ${catkin_INCLUDE_DIRS})
+  ${catkin_INCLUDE_DIRS}
+  ${yaml_cpp_INCLUDE_DIRS})
 
-add_executable(simulator 
-  src/${PROJECT_NAME}/simulator_main.cpp)
-add_dependencies(simulator 
-  ${${PROJECT_NAME}_EXPORTED_TARGETS} 
+add_executable(simulator
+  src/${PROJECT_NAME}/simulator_main.cpp src/${PROJECT_NAME}/expressions.cpp)
+add_dependencies(simulator
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS})
 target_link_libraries(simulator
-  ${catkin_LIBRARIES})
+  ${catkin_LIBRARIES} yaml-cpp)
 
 set(TEST_SRCS
   test/${PROJECT_NAME}/main.cpp

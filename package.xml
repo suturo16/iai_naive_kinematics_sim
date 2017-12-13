@@ -3,7 +3,7 @@
   <name>iai_naive_kinematics_sim</name>
   <version>0.0.3</version>
   <description>
-    A set of naive robot kinematics simulators for ROS. Main design goal: Providing 
+    A set of naive robot kinematics simulators for ROS. Main design goal: Providing
     a ROS-based kinematics simulator for early-stage development of kinematics algorithms
     that is light-weight in comparison to full-scale simulators, e.g. Gazebo.
   </description>
@@ -20,6 +20,7 @@
   <depend>urdf</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
+  <depend>resource_retriever</depend>
   <test_depend>gtest</test_depend>
   <test_depend>rosunit</test_depend>
 

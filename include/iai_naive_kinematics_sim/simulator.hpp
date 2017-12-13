@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2015-2017, Georg Bartels, <georg.bartels@cs.uni-bremen.de>
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *   * Redistributions of source code must retain the above copyright
@@ -9,11 +9,11 @@
  *   * Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in the
  *     documentation and/or other materials provided with the distribution.
- *   * Neither the name of the Institute of Artificial Intelligence, 
- *     University of Bremen nor the names of its contributors may be used 
- *     to endorse or promote products derived from this software without 
+ *   * Neither the name of the Institute of Artificial Intelligence,
+ *     University of Bremen nor the names of its contributors may be used
+ *     to endorse or promote products derived from this software without
  *     specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -31,26 +31,38 @@
 
 #include <iai_naive_kinematics_sim/utils.hpp>
 #include <iai_naive_kinematics_sim/watchdog.hpp>
+#include "iai_naive_kinematics_sim/expressions.h"
 
 namespace iai_naive_kinematics_sim
 {
   class Simulator
   {
+    friend class ExpressionTree;
+
     public:
-      Simulator() {}
+      Simulator() : expressionTree(this) {}
 
       ~Simulator() {}
 
-      void init(const urdf::Model& model, 
+      void init(const urdf::Model& model,
           const std::vector<std::string>& simulated_joints,
           const std::vector<std::string>& controlled_joints,
-          const ros::Duration& watchdog_period)
+          const ros::Duration& watchdog_period,
+          const YAML::Node& fake_controllers)
       {
         model_ = model;
         state_ = bootstrapJointState(model, simulated_joints);
         command_ = state_;
         index_map_ = makeJointIndexMap(state_.name);
         watchdogs_ = makeWatchdogs(model, controlled_joints, watchdog_period);
+        loadFakeJoints(fake_controllers);
+      }
+
+      void loadFakeJoints(const YAML::Node& node) {
+        posExprs.clear();
+        velExprs.clear();
+        effExprs.clear();
+        expressionTree.parseYAML(node, posExprs, velExprs, effExprs);
       }
 
       size_t size() const
@@ -67,7 +79,7 @@ namespace iai_naive_kinematics_sim
         for (std::map<std::string, Watchdog>::const_iterator it=watchdogs_.begin(); it!=watchdogs_.end(); ++it)
           if (it->second.barks(now))
             setJointVelocity(command_, getJointIndex(it->first), 0.0);
-        
+
         for(size_t i=0; i<state_.position.size(); ++i)
         {
           // FIXME: having this check might be inefficient, profile this
@@ -75,7 +87,13 @@ namespace iai_naive_kinematics_sim
             state_.velocity[i] = command_.velocity[i];
           state_.position[i] += state_.velocity[i] * dt.toSec();
           enforceJointLimits(state_.name[i]);
-        } 
+        }
+
+        // Update fake psoitions
+        for(auto it = posExprs.begin(); it != posExprs.end(); it++) {
+          state_.position[it->first] = it->second->value();
+          enforceJointLimits(state_.name[it->first]);
+        }
 
         state_.header.stamp = now;
         state_.header.seq++;
@@ -94,14 +112,14 @@ namespace iai_naive_kinematics_sim
       bool hasJoint(const std::string& name) const
       {
         std::map<std::string, size_t>::const_iterator it = index_map_.find(name);
-        
+
         return it!=index_map_.end();
       }
 
       bool hasControlledJoint(const std::string& name) const
       {
         std::map<std::string, Watchdog>::const_iterator it = watchdogs_.find(name);
-        
+
         return it!=watchdogs_.end();
       }
 
@@ -110,7 +128,7 @@ namespace iai_naive_kinematics_sim
         sanityCheckJointState(state);
 
         for(size_t i=0; i<state.name.size(); ++i)
-          setJointState(state_, getJointIndex(state.name[i]), state.name[i], 
+          setJointState(state_, getJointIndex(state.name[i]), state.name[i],
               state.position[i], state.velocity[i], state.effort[i]);
       }
 
@@ -134,6 +152,11 @@ namespace iai_naive_kinematics_sim
       // internal state and commands of the simulator
       sensor_msgs::JointState state_, command_;
 
+      ExpressionTree expressionTree;
+      unordered_map<size_t, Expression<double>*> posExprs;
+      unordered_map<size_t, Expression<double>*> velExprs;
+      unordered_map<size_t, Expression<double>*> effExprs;
+
       // a map from joint-state names to their index in the joint-state message
       std::map<std::string, size_t> index_map_;
 
@@ -146,7 +169,7 @@ namespace iai_naive_kinematics_sim
       size_t getJointIndex(const std::string& name) const
       {
         std::map<std::string, size_t>::const_iterator it = index_map_.find(name);
-        
+
         if (it==index_map_.end())
           throw std::runtime_error("Could not find joint index for joint with name '" +
               name + "'.");
@@ -173,12 +196,12 @@ namespace iai_naive_kinematics_sim
             joint->limits.get())
         {
           // joint should be limited, and has limits specified
-          
+
           size_t index = getJointIndex(name);
           if(state_.position[index] < joint->limits->lower ||
              state_.position[index] > joint->limits->upper)
           {
-            state_.position[index] = 
+            state_.position[index] =
               std::max(joint->limits->lower, std::min(state_.position[index], joint->limits->upper));
             state_.velocity[index] = 0.0;
           }
